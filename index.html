@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Runner Game</title>
 
 <style>
@@ -11,10 +10,9 @@ body {
   overflow: hidden;
   font-family: Arial;
   color: white;
-  touch-action: manipulation;
 }
 
-/* Intro */
+/* INTRO SCREEN */
 #startScreen {
   position: absolute;
   width: 100%;
@@ -22,10 +20,10 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+
   background: linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#000);
   background-size: 400% 400%;
   animation: bg 8s infinite;
-  z-index: 10;
 }
 
 @keyframes bg {
@@ -34,7 +32,7 @@ body {
   100%{background-position:0%}
 }
 
-.intro-card {
+.card {
   text-align: center;
   max-width: 500px;
   padding: 25px;
@@ -42,33 +40,57 @@ body {
   border-radius: 20px;
 }
 
+/* PROFILE */
 .profile-img {
-  width:120px;
-  height:120px;
+  width:140px;
+  height:140px;
   border-radius:50%;
   object-fit:cover;
   border:4px solid white;
   margin-bottom:10px;
 }
 
-.title {
-  font-size:24px;
-  margin:5px 0;
+/* ID */
+.insta-id a {
+  text-decoration:none;
+  font-weight:bold;
+  background: linear-gradient(90deg,#00c6ff,#ff00cc);
+  -webkit-background-clip:text;
+  color:transparent;
 }
 
-.btns {
+/* TITLE */
+.title {
+  font-size:26px;
+  margin:5px 0;
+  background: linear-gradient(90deg,#00c6ff,#ff00cc);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+/* BUTTONS */
+.buttons {
   margin-top:15px;
 }
 
-.follow, .play {
+.follow {
+  background: linear-gradient(45deg,#ff4e50,#ff00cc);
+  color:white;
   border:none;
-  padding:12px 18px;
+  padding:10px 15px;
+  border-radius:8px;
   cursor:pointer;
-  font-size:16px;
+  margin-right:10px;
 }
 
-.follow { background:#ff00cc; color:white; }
-.play { background:#2196f3; color:white; }
+.play {
+  background: linear-gradient(45deg,#2196f3,#00c6ff);
+  color:white;
+  border:none;
+  padding:10px 15px;
+  border-radius:8px;
+  cursor:pointer;
+}
 
 canvas {
   display:none;
@@ -78,31 +100,40 @@ canvas {
 
 <body>
 
+<!-- INTRO -->
 <div id="startScreen">
-  <div class="intro-card">
+  <div class="card">
 
     <img src="profile.jpg" class="profile-img">
 
+    <p class="insta-id">
+      <a href="https://instagram.com/iam_akashray_" target="_blank">
+        @iam_akashray_
+      </a>
+    </p>
+
     <h2 class="title">Akash Ray</h2>
 
-    <p>Hey everyone!
-This game is made purely for fun, so please don’t take it too seriously. It’s just a simple experience created to enjoy and pass some time.
+    <p>
+      This game is made purely for fun, so please don’t take it too seriously.
+      A lot of hard work went into building this project.  
+      If you like it, please follow my Instagram for support.
+    </p>
 
-That said, a lot of hard work, time, and effort went into building this from scratch. Every part of this game reflects dedication and the will to create something on my own.
-
-If you like this project even a little, please take a moment to support me by following my Instagram. Your support truly matters and motivates me to create more and improve further.
-
-Thanks for being here—now go ahead and enjoy the game!</p>
-
-    <div class="btns">
-      <button class="play" id="playBtn">Play</button>
+    <div class="buttons">
+      <a href="https://instagram.com/iam_akashray_" target="_blank">
+        <button class="follow">Follow</button>
+      </a>
+      <button class="play" onclick="startGame()">Play</button>
     </div>
 
   </div>
 </div>
 
+<!-- GAME -->
 <canvas id="gameCanvas"></canvas>
 
+<!-- AUDIO -->
 <audio id="bgMusic" src="start.mp3"></audio>
 <audio id="gameOverMusic" src="gameover.mp3"></audio>
 
@@ -110,7 +141,7 @@ Thanks for being here—now go ahead and enjoy the game!</p>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let player, pillars, score, running = false;
+let player, pillars, score, running;
 
 const bgMusic = document.getElementById("bgMusic");
 const gameOverMusic = document.getElementById("gameOverMusic");
@@ -123,12 +154,20 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-/* Start Game */
+/* START */
 function startGame() {
   document.getElementById("startScreen").style.display = "none";
   canvas.style.display = "block";
 
-  player = {x:80,y:200,size:30,vel:0};
+  player = {
+    x: 100,
+    y: 200,
+    size: 30,
+    velocity: 0,
+    gravity: 0.4,
+    jump: -10
+  };
+
   pillars = [];
   score = 0;
   running = true;
@@ -137,119 +176,101 @@ function startGame() {
   bgMusic.currentTime = 0;
   bgMusic.play().catch(()=>{});
 
-  spawnLoop();
   loop();
 }
 
-/* FIXED PLAY BUTTON (mobile safe) */
-document.getElementById("playBtn").addEventListener("pointerdown", (e)=>{
-  e.preventDefault();
-  startGame();
-});
-
-/* Pillar */
+/* CREATE PILLAR */
 function addPillar() {
-  let gap = 160;
+  let gap = 180;
   let top = Math.random()*(canvas.height-gap-100)+50;
 
   pillars.push({
-    x:canvas.width,
-    top:top,
-    bottom:canvas.height-top-gap,
-    w:50,
-    passed:false
+    x: canvas.width,
+    top: top,
+    bottom: canvas.height - top - gap,
+    w: 50,
+    passed: false
   });
 }
 
-/* Update */
+/* UPDATE */
 function update() {
-  player.vel += 0.5;
-  player.vel *= 0.98;
-  player.y += player.vel;
+  player.velocity += player.gravity;
+  if (player.velocity > 10) player.velocity = 10;
 
-  if(player.y+player.size>canvas.height) gameOver();
+  player.y += player.velocity;
 
-  pillars.forEach(p=>{
-    p.x -= 5;
+  if (player.y + player.size > canvas.height) gameOver();
 
-    if(
-      player.x < p.x+p.w &&
-      player.x+player.size > p.x &&
-      (player.y < p.top || player.y+player.size > canvas.height-p.bottom)
-    ){
+  pillars.forEach(p => {
+    p.x -= 3;
+
+    if (
+      player.x < p.x + p.w &&
+      player.x + player.size > p.x &&
+      (player.y < p.top || player.y + player.size > canvas.height - p.bottom)
+    ) {
       gameOver();
     }
 
-    if(!p.passed && p.x < player.x){
+    if (!p.passed && p.x < player.x) {
       score++;
-      p.passed=true;
+      p.passed = true;
     }
   });
 
-  pillars = pillars.filter(p=>p.x+p.w>0);
+  pillars = pillars.filter(p => p.x + p.w > 0);
 }
 
-/* Draw */
+/* DRAW */
 function draw() {
-  ctx.fillStyle="black";
+  ctx.fillStyle = "black";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  ctx.fillStyle="yellow";
-  ctx.fillRect(player.x,player.y,player.size,player.size);
+  ctx.fillStyle = "yellow";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
 
-  ctx.fillStyle="green";
-  pillars.forEach(p=>{
+  ctx.fillStyle = "green";
+  pillars.forEach(p => {
     ctx.fillRect(p.x,0,p.w,p.top);
     ctx.fillRect(p.x,canvas.height-p.bottom,p.w,p.bottom);
   });
 
-  ctx.fillStyle="white";
-  ctx.font = "20px Arial";
-  ctx.fillText("Score: "+score,20,30);
-  ctx.fillText("Tap to Jump", canvas.width/2 - 60, canvas.height - 40);
+  ctx.fillStyle = "white";
+  ctx.fillText("Score: " + score, 20, 30);
 }
 
-/* Loop */
+/* LOOP */
 function loop() {
-  if(!running) return;
+  if (!running) return;
   update();
   draw();
   requestAnimationFrame(loop);
 }
 
-/* Game Over */
+/* GAME OVER */
 function gameOver() {
-  running=false;
+  running = false;
   bgMusic.pause();
   gameOverMusic.play();
 
-  setTimeout(()=>{
-    alert("Score: "+score);
+  setTimeout(() => {
+    alert("Score: " + score);
     location.reload();
-  },200);
+  }, 200);
 }
 
-/* Jump (only when running) */
-function handleInput(e){
-  if(!running) return;
-  e.preventDefault();
-  player.vel = -12;
-}
+/* CONTROL */
+window.addEventListener("pointerdown", () => {
+  if (running) {
+    player.velocity = player.jump;
+  }
+});
 
-/* Controls */
-window.addEventListener("pointerdown", handleInput);
-
-/* Prevent scroll */
-document.body.addEventListener("touchmove", e => {
-  if(running) e.preventDefault();
-}, { passive: false });
-
-/* Spawn Loop */
-function spawnLoop(){
-  if(!running) return;
-  addPillar();
-  setTimeout(spawnLoop, 1200 + Math.random()*800);
-}
+/* PILLARS */
+setInterval(() => {
+  if (running) addPillar();
+}, 2000);
 
 </script>
 
