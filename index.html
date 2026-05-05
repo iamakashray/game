@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Runner Game</title>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial;
+  color: white;
+}
+
+/* Intro */
+#startScreen {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#000);
+  background-size: 400% 400%;
+  animation: bg 8s infinite;
+}
+
+@keyframes bg {
+  0%{background-position:0%}
+  50%{background-position:100%}
+  100%{background-position:0%}
+}
+
+.intro-card {
+  text-align: center;
+  max-width: 500px;
+  padding: 25px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 20px;
+}
+
+.profile-img {
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  object-fit:cover;
+  border:4px solid white;
+  margin-bottom:10px;
+}
+
+.insta-id a {
+  text-decoration:none;
+  font-weight:bold;
+  background: linear-gradient(90deg,#00c6ff,#ff00cc);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.title {
+  font-size:26px;
+  margin:5px 0;
+  background: linear-gradient(90deg,#00c6ff,#ff00cc);
+  -webkit-background-clip:text;
+  color:transparent;
+}
+
+.btns {
+  margin-top:15px;
+}
+
+.follow {
+  background:#ff00cc;
+  color:white;
+  border:none;
+  padding:10px 15px;
+  margin-right:10px;
+  cursor:pointer;
+}
+
+.play {
+  background:#2196f3;
+  color:white;
+  border:none;
+  padding:10px 15px;
+  cursor:pointer;
+}
+
+canvas {
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="startScreen">
+  <div class="intro-card">
+
+    <img src="profile.jpg" class="profile-img">
+
+    <p class="insta-id">
+      <a href="https://instagram.com/iam_akashray_" target="_blank">
+        @iam_akashray_
+      </a>
+    </p>
+
+    <h2 class="title">Akash Ray</h2>
+
+    <p>Hey everyone!
+This game is made purely for fun, so please don’t take it too seriously. It’s just a simple experience created to enjoy and pass some time.
+
+That said, a lot of hard work, time, and effort went into building this from scratch. Every part of this game reflects dedication and the will to create something on my own.
+
+If you like this project even a little, please take a moment to support me by following my Instagram. Your support truly matters and motivates me to create more and improve further.
+
+Thanks for being here—now go ahead and enjoy the game!</p>
+
+    <div class="btns">
+      <a href="https://instagram.com/iam_akashray_" target="_blank">
+        <button class="follow">Follow</button>
+      </a>
+      <button class="play" onclick="startGame()">Play</button>
+    </div>
+
+  </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<audio id="bgMusic" src="start.mp3"></audio>
+<audio id="gameOverMusic" src="gameover.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let player, pillars, score, running;
+
+const bgMusic = document.getElementById("bgMusic");
+const gameOverMusic = document.getElementById("gameOverMusic");
+
+/* Resize fix */
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* Start */
+function startGame() {
+  document.getElementById("startScreen").style.display = "none";
+  canvas.style.display = "block";
+
+  player = {x:100,y:200,size:30,vel:0};
+  pillars = [];
+  score = 0;
+  running = true;
+
+  bgMusic.loop = true;
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(()=>{});
+
+  loop();
+}
+
+/* Pillar */
+function addPillar() {
+  let gap = 150;
+  let top = Math.random()*(canvas.height-gap-100)+50;
+
+  pillars.push({
+    x:canvas.width,
+    top:top,
+    bottom:canvas.height-top-gap,
+    w:50,
+    passed:false
+  });
+}
+
+/* Update */
+function update() {
+  player.vel += 0.6;
+  player.y += player.vel;
+
+  if(player.y+player.size>canvas.height) gameOver();
+
+  pillars.forEach(p=>{
+    p.x -= 5;
+
+    if(
+      player.x < p.x+p.w &&
+      player.x+player.size > p.x &&
+      (player.y < p.top || player.y+player.size > canvas.height-p.bottom)
+    ){
+      gameOver();
+    }
+
+    if(!p.passed && p.x < player.x){
+      score++;
+      p.passed=true;
+    }
+  });
+
+  pillars = pillars.filter(p=>p.x+p.w>0);
+}
+
+/* Draw */
+function draw() {
+  ctx.fillStyle="black";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle="yellow";
+  ctx.fillRect(player.x,player.y,player.size,player.size);
+
+  ctx.fillStyle="green";
+  pillars.forEach(p=>{
+    ctx.fillRect(p.x,0,p.w,p.top);
+    ctx.fillRect(p.x,canvas.height-p.bottom,p.w,p.bottom);
+  });
+
+  ctx.fillStyle="white";
+  ctx.fillText("Score: "+score,20,30);
+}
+
+/* Loop */
+function loop() {
+  if(!running) return;
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+/* Game over */
+function gameOver() {
+  running=false;
+  bgMusic.pause();
+  gameOverMusic.play();
+
+  setTimeout(()=>{
+    alert("Score: "+score);
+    location.reload();
+  },200);
+}
+
+/* Control */
+window.addEventListener("click", ()=>{
+  if(running){
+    player.vel = -10;
+  }
+});
+
+/* Pillar interval */
+setInterval(()=>{
+  if(running) addPillar();
+},1500);
+
+</script>
+
+</body>
+</html>
