@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Runner Game</title>
 
 <style>
@@ -10,6 +11,7 @@ body {
   overflow: hidden;
   font-family: Arial;
   color: white;
+  touch-action: none;
 }
 
 /* Intro */
@@ -40,8 +42,8 @@ body {
 }
 
 .profile-img {
-  width:140px;
-  height:140px;
+  width:120px;
+  height:120px;
   border-radius:50%;
   object-fit:cover;
   border:4px solid white;
@@ -57,7 +59,7 @@ body {
 }
 
 .title {
-  font-size:26px;
+  font-size:24px;
   margin:5px 0;
   background: linear-gradient(90deg,#00c6ff,#ff00cc);
   -webkit-background-clip:text;
@@ -68,22 +70,14 @@ body {
   margin-top:15px;
 }
 
-.follow {
-  background:#ff00cc;
-  color:white;
+.follow, .play {
   border:none;
   padding:10px 15px;
-  margin-right:10px;
   cursor:pointer;
 }
 
-.play {
-  background:#2196f3;
-  color:white;
-  border:none;
-  padding:10px 15px;
-  cursor:pointer;
-}
+.follow { background:#ff00cc; color:white; }
+.play { background:#2196f3; color:white; }
 
 canvas {
   display:none;
@@ -106,14 +100,16 @@ canvas {
 
     <h2 class="title">Akash Ray</h2>
 
-    <p>Hey everyone!
+    <p>
+Hey everyone!
 This game is made purely for fun, so please don’t take it too seriously. It’s just a simple experience created to enjoy and pass some time.
 
 That said, a lot of hard work, time, and effort went into building this from scratch. Every part of this game reflects dedication and the will to create something on my own.
 
 If you like this project even a little, please take a moment to support me by following my Instagram. Your support truly matters and motivates me to create more and improve further.
 
-Thanks for being here—now go ahead and enjoy the game!</p>
+Thanks for being here—now go ahead and enjoy the game!
+    </p>
 
     <div class="btns">
       <a href="https://instagram.com/iam_akashray_" target="_blank">
@@ -139,10 +135,11 @@ let player, pillars, score, running;
 const bgMusic = document.getElementById("bgMusic");
 const gameOverMusic = document.getElementById("gameOverMusic");
 
-/* Resize fix */
+/* Resize */
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  ctx.setTransform(1,0,0,1,0,0);
 }
 window.addEventListener("resize", resize);
 resize();
@@ -152,7 +149,7 @@ function startGame() {
   document.getElementById("startScreen").style.display = "none";
   canvas.style.display = "block";
 
-  player = {x:100,y:200,size:30,vel:0};
+  player = {x:80,y:200,size:30,vel:0};
   pillars = [];
   score = 0;
   running = true;
@@ -161,12 +158,13 @@ function startGame() {
   bgMusic.currentTime = 0;
   bgMusic.play().catch(()=>{});
 
+  spawnLoop();
   loop();
 }
 
 /* Pillar */
 function addPillar() {
-  let gap = 150;
+  let gap = 160;
   let top = Math.random()*(canvas.height-gap-100)+50;
 
   pillars.push({
@@ -180,7 +178,8 @@ function addPillar() {
 
 /* Update */
 function update() {
-  player.vel += 0.6;
+  player.vel += 0.5;
+  player.vel *= 0.98;
   player.y += player.vel;
 
   if(player.y+player.size>canvas.height) gameOver();
@@ -220,7 +219,10 @@ function draw() {
   });
 
   ctx.fillStyle="white";
+  ctx.font = "20px Arial";
   ctx.fillText("Score: "+score,20,30);
+
+  ctx.fillText("Tap to Jump", canvas.width/2 - 60, canvas.height - 40);
 }
 
 /* Loop */
@@ -243,17 +245,32 @@ function gameOver() {
   },200);
 }
 
-/* Control */
-window.addEventListener("click", ()=>{
+/* Jump */
+function jump(){
   if(running){
-    player.vel = -10;
+    player.vel = -12;
   }
-});
+}
 
-/* Pillar interval */
-setInterval(()=>{
-  if(running) addPillar();
-},1500);
+/* Controls */
+window.addEventListener("pointerdown", jump);
+window.addEventListener("mousedown", jump);
+window.addEventListener("touchstart", (e)=>{
+  e.preventDefault();
+  jump();
+}, {passive:false});
+
+/* Prevent scroll */
+document.body.addEventListener("touchmove", e => {
+  if(running) e.preventDefault();
+}, { passive: false });
+
+/* Dynamic spawn */
+function spawnLoop(){
+  if(!running) return;
+  addPillar();
+  setTimeout(spawnLoop, 1200 + Math.random()*800);
+}
 
 </script>
 
